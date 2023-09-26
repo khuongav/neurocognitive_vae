@@ -1,1 +1,3 @@
-# neurocognitive_vae
+# Neurocognitive VAEs
+
+![alt text](images/architecture.png)
