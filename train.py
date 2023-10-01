@@ -73,10 +73,7 @@ tb = SummaryWriter("logs/%s" % experiment_name)
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-if subject == 's59':
-    data_dir = 'dataset_cue/'
-else:
-    data_dir = 'dataset/'
+data_dir = 'dataset/'
 train_dataloader, test_dataloader = get_data_loader('data_loaders/%s' %data_dir, batch_size=64, 
                                                     device=device, subject=subject,
                                                     shuffle_training=True, shuffle_testing=True,
