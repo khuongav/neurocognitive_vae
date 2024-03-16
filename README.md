@@ -6,11 +6,11 @@ Paper link: https://www.sciencedirect.com/science/article/pii/S1053811924000545
 
 (a) Generative Process:
 
-<img src='images/architecture_a.png' width='90%' height='90%'>
+<img src='images/architecture_a.png' width='100%' height='100%'>
 
 (b) Regularized Discriminative Process:
 
-<img src='images/architecture_b.png' width='90%' height='90%'>
+<img src='images/architecture_b.png' width='100%' height='100%'>
 
 After the generative process (a) learns the joint latent neurocognitive variables (Section \ref{gen}), the regularized discriminative process (b) retrofits its hierarchical latent space to the joint latent space (Section \ref{disc}). Inference networks $q$ and Generation networks $p$ contain neural network parameters $\theta$ and $\phi$. Black arrows: flows of operations. Red arrows: loss functions. MSE and WFPT stand for Mean Squared Error and Wiener First Passage Time, respectively. The heatmaps represent the probability distributions in the latent spaces. Plasma color maps are for the drift-diffusion variables ($z_C \in \mathbb{R}^{3}$), while greenery color maps are for residual neural variables ($z_N \in \mathbb{R}^{32}$). Blue blocks contain $\mu$ and $\sigma$, which are the parameters of the multivariate Gaussian latent spaces. Gray blocks contain $z$ sampled ($\sim$) from the distributions. The variables $x$ and $y$ represent EEG signals and choice-RTs, respectively. Each trapezoid represents a different convolutional neural network.
 
