@@ -5,54 +5,15 @@ import random
 import numpy as np
 import torch
 
-# matplotlib.use('Agg')
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-# plt.rcParams['figure.figsize'] = 20, 15
 import seaborn as sns
-# sns.set_theme()
-# sns.set_style('white')
-
 
 def print_model_params(model):
     for name, param in model.named_parameters():
         if param.requires_grad:
             print(name, param.shape)
-
-
-def validate_state_dicts(model_state_dict_1, model_state_dict_2):
-    if len(model_state_dict_1) != len(model_state_dict_2):
-        print(
-            f"Length mismatch: {len(model_state_dict_1)}, {len(model_state_dict_2)}"
-        )
-        return False
-
-    # Replicate modules have "module" attached to their keys, so strip these off when comparing to local model.
-    if next(iter(model_state_dict_1.keys())).startswith("module"):
-        model_state_dict_1 = {
-            k[len("module") + 1:]: v for k, v in model_state_dict_1.items()
-        }
-
-    if next(iter(model_state_dict_2.keys())).startswith("module"):
-        model_state_dict_2 = {
-            k[len("module") + 1:]: v for k, v in model_state_dict_2.items()
-        }
-
-    for ((k_1, v_1), (k_2, v_2)) in zip(
-        model_state_dict_1.items(), model_state_dict_2.items()
-    ):
-        if k_1 != k_2:
-            print(f"Key mismatch: {k_1} vs {k_2}")
-            return False
-        # convert both to the same CUDA device
-        if str(v_1.device) != "cuda:0":
-            v_1 = v_1.to("cuda:0" if torch.cuda.is_available() else "cpu")
-        if str(v_2.device) != "cuda:0":
-            v_2 = v_2.to("cuda:0" if torch.cuda.is_available() else "cpu")
-
-        if not torch.allclose(v_1, v_2):
-            print(f"Tensor mismatch: {k_1} vs {k_2}")
-            # return False
 
 
 def overwrite_log_dir(dir):
@@ -85,23 +46,6 @@ def avg_n_rows(a, r, c):
 
 def squeeze_(a):
     return a.squeeze(dim=1).cpu().detach().numpy()
-
-
-def frange_cycle_linear(start, stop, n_epoch, n_cycle=4, ratio=0.5):
-    # original annealing: linearly increases to n_epoch * ratio
-
-    L = np.ones(n_epoch)
-    period = n_epoch/n_cycle
-    step = (stop-start)/(period*ratio)  # linear schedule
-
-    for c in range(n_cycle):
-
-        v, i = start, 0
-        while v <= stop and (int(i+c*period) < n_epoch):
-            L[int(i+c*period)] = v
-            v += step
-            i += 1
-    return L
 
 
 def get_rts_cond(dataloader, high_cond, med_cond, low_cond, device):
@@ -181,11 +125,6 @@ def plot_fft(sig, ylim_):
     return abs_fourier_transform
 
 
-def get_lr(optimizer):
-    for param_group in optimizer.param_groups:
-        return param_group['lr']
-
-
 def write_logs(tb, loss_type, total_loss, rec_loss_eeg_avg, rec_loss_eeg, wfpt_loss, choice_loss, kl_loss, kl_loss_y,
                corr_n200, corr_a, corr_v, corr_ndt, kl_dim, batches_done):
 
@@ -218,19 +157,19 @@ def write_logs(tb, loss_type, total_loss, rec_loss_eeg_avg, rec_loss_eeg, wfpt_l
     tb.add_scalars(loss_type+'/corr', {'corr_n200': corr_n200}, batches_done)
 
 
-def plot_erp(eeg_arr, dim=None, svded=False, ylim=None, n200_loc=None):
+def plot_erp(eeg_arr, dim=None, svded=False, ylim=None, n200_loc=None, fig_name=None):
     if not svded:
         erp = np.mean(eeg_arr, axis=0).T
     else:
         erp = eeg_arr.T
 
-    fig, axs = plt.subplots(figsize=(10, 4))
+    fig, axs = plt.subplots(figsize=(10, 4), constrained_layout=True)
     axs.plot(np.arange(-100, 900, 4), erp)
     axs.xaxis.set_major_locator(
         ticker.FixedLocator(np.arange(-100, 900, 100)))
     axs.set_ylabel('Normalized Amplitude')
     axs.set_xlabel('Time (ms)')
-    axs.set_title('ERP')
+    axs.set_title('Event-Related Potential')
     if ylim is not None:
         axs.set_ylim(ylim[0], ylim[1])
         axs.axvline(x = np.linspace(-100, 900,250)[int((n200_loc + 100)/ 4)], color = 'black', linewidth = 4, alpha=0.5, label = 'N200 Peak')
@@ -239,8 +178,11 @@ def plot_erp(eeg_arr, dim=None, svded=False, ylim=None, n200_loc=None):
     if dim is not None:
         axs.text(-100, -1, 'Feature dim: %s' % dim)
 
+    if fig_name is not None:
+        plt.savefig('plots/%s.png' %(fig_name), dpi=400)
 
-def plot_fft_channels(eeg_arr, avg_trials=True, xlim=(25, 45), ylim=30, power_only=False):
+
+def plot_fft_channels(eeg_arr, avg_trials=True, xlim=(25, 45), ylim=30, power_only=False, fig_name=None):
     sampling_rate = 250
 
     if avg_trials:
@@ -252,22 +194,28 @@ def plot_fft_channels(eeg_arr, avg_trials=True, xlim=(25, 45), ylim=30, power_on
     frequency = np.linspace(0, sampling_rate/2, len(abs_fourier_transform))
 
     if not power_only:
-        plt.figure(figsize=(5, 4))
-        plt.plot(frequency, abs_fourier_transform)
-        plt.xlabel('Frequency (Hz)')
-        plt.ylabel('Magnitude')
-        plt.xlim(xlim[0], xlim[1])
-        plt.ylim(0, ylim)
+        fig, axs = plt.subplots(figsize=(5, 4), constrained_layout=True)
+        # plt.figure(figsize=(5, 4))
+
+        axs.plot(frequency, abs_fourier_transform)
+        axs.set_xlabel('Frequency (Hz)')
+        axs.set_ylabel('Magnitude')
+        axs.set_xlim(xlim[0], xlim[1])
+        axs.set_ylim(0, ylim)
 
         if avg_trials:
-            plt.title('Mean Frequency Spectra')      
+            axs.set_title('Mean Frequency Spectra')      
         else:
-            plt.title('Frequency Spectra')
+            axs.set_title('Frequency Spectra')
+
+        if fig_name is not None:
+            plt.savefig('plots/%s.png' %(fig_name), dpi=400)
     
     hz_30 = np.max(abs_fourier_transform[25:35, :])
     hz_40 = np.max(abs_fourier_transform[35:45, :])
     print('30 Hz', hz_30)
     print('40 Hz', hz_40)
+
     return hz_30, hz_40
 
 
@@ -303,13 +251,13 @@ def plot_30_40_Hz_energies(eeg_arr_rec):
 
 def set_seed(subject):
     if subject == 's59':
-        seed = 42
+        seed = 4321
     elif subject == 's109':
         seed = 1234
     elif subject == 's100':
-        seed = 234
+        seed = 1234
     elif subject == 's110':
-        seed = 2859
+        seed = 44
 
     np.random.seed(seed)
     random.seed(seed)

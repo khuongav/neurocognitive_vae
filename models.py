@@ -74,13 +74,11 @@ class NetUp(nn.Module):
             return self.net_up_final_block(noise)
 
 
-class Self_Attn(nn.Module):
-    """ Self attention Layer"""
+class SelfAttention(nn.Module):
 
     def __init__(self, in_dim):
-        super().__init__()
+        super(SelfAttention, self).__init__()
 
-        # Construct the conv layers
         self.query_conv = nn.Conv2d(
             in_channels=in_dim, out_channels=in_dim//2, kernel_size=1)
         self.key_conv = nn.Conv2d(
@@ -88,18 +86,11 @@ class Self_Attn(nn.Module):
         self.value_conv = nn.Conv2d(
             in_channels=in_dim, out_channels=in_dim, kernel_size=1)
 
-        # Initialize gamma as 0
         self.gamma = nn.Parameter(torch.zeros(1))
         self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, x):
-        """
-            inputs :
-                x : input feature maps( B * C * T)
-            returns :
-                out : self attention value + input feature 
-                attention: B * T * T
-        """
+
         x = torch.unsqueeze(x, -1)
         m_batchsize, C, width, height = x.size()
 
@@ -133,7 +124,7 @@ class FeatureExtractor(nn.Module):
 
         self.netE_down1 = NetDown(d, dropout)
         self.netE_down2 = NetDown(d, dropout)
-        self.netA_1 = Self_Attn(d*4)
+        self.netA_1 = SelfAttention(d*4)
         self.netE_down3 = NetDown(d, dropout)
         self.netE_down4 = NetDown(d, dropout)
 
@@ -186,10 +177,10 @@ class DecoderX(nn.Module):
                               hid_dim * 4, kernel_size=8, stride=4)
         self.netD_up2 = NetUp(hid_dim * 4, hid_dim * 2,
                               output_padding=1, kernel_size=8, stride=4)
-        self.netA_1 = Self_Attn(hid_dim * 2)
+        self.netA_1 = SelfAttention(hid_dim * 2)
         self.netD_up3 = NetUp(hid_dim * 2, hid_dim, output_padding=2)
         self.netD_up4 = NetUp(hid_dim, hid_dim, stride=1, output_padding=0)
-        self.netA_2 = Self_Attn(hid_dim)
+        self.netA_2 = SelfAttention(hid_dim)
         self.netD_up5 = NetUp(
             hid_dim, eeg_chan, kernel_size=10, stride=2, output_padding=0)
 

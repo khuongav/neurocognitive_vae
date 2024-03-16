@@ -2,11 +2,8 @@ import math
 import torch
 import torch.nn as nn
 
-
 reconstruction_loss = nn.MSELoss(reduction='mean')
 binary_choice_loss = nn.BCEWithLogitsLoss()
-# binary_choice_loss = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([1/10]).cuda())
-
 
 def wiener_loss(t, v, t0, a, backprop_ndt=False):
     # small-time version
@@ -57,7 +54,7 @@ def softargmax(alpha, theda=100.0):
     return outputs
 
 
-def correlation_loss(y_pred, y_true):
+def correlation_measure(y_pred, y_true):
     x = y_pred.clone()
     y = y_true.clone()
     vx = x - torch.mean(x)

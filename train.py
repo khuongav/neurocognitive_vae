@@ -14,8 +14,8 @@ from torch.utils.tensorboard import SummaryWriter
 subject = 's59'
 one_hot_cond = True
 
-experiment_name = 'ddm-vae_%s_full5_choice_ddm_signed4' % subject
-# experiment_name = 'ddm-vae_%s_uninformed_full5_choice_ddm' % subject
+experiment_name = 'ddm-vae_%s' % subject
+# experiment_name = 'ddm-vae_%s_uninformed' % subject
 informative_priors = False if 'uninformed' in experiment_name else True
 print('informative_priors', informative_priors)
 
@@ -116,7 +116,6 @@ if start_epoch > 0:
         checkpoint['posterior_ndt_opt_state_dict'])
     bridger_opt.load_state_dict(checkpoint['bridger_opt_state_dict'])
 
-# experiment_name = 'ddm-vae_%s_uninformed_full5_choice_ddm' % subject
 # --------------------- Running ----------------------#
 
 def run(batch, epoch):
@@ -167,13 +166,13 @@ def run(batch, epoch):
 
     kl_loss, kl_dim = kl_divergence_loss(informative_priors, kl_weight, kl_ddm_weight, q_mean, q_logvar, priors_ddm=priors, prior_ndt=True if epoch > ndt_epoch else False)
 
-    corr_ndt = correlation_loss(ndt, torch.abs(rts))
-    corr_v = correlation_loss(v, rts)
-    corr_a = correlation_loss(a, torch.abs(rts))
+    corr_ndt = correlation_measure(ndt, torch.abs(rts))
+    corr_v = correlation_measure(v, rts)
+    corr_a = correlation_measure(a, torch.abs(rts))
     
     n200_peaks_ori = softargmax(-eeg_avg[:, 0, 25 + int(150/4): 25 + int(275/4)])
     n200_peaks_rec = softargmax(-eeg_avg_rec[:, 0, 25 + int(150/4): 25 + int(275/4)])
-    corr_n200 = correlation_loss(n200_peaks_ori, n200_peaks_rec)
+    corr_n200 = correlation_measure(n200_peaks_ori, n200_peaks_rec)
 
     kl_loss_y = 0
     if epoch > joint_epoch:
